@@ -47,6 +47,6 @@ class VK:
 
     def get_sns(self, ids: list) -> tuple:
         ids = [str(x) for x in ids]
-        return tuple([(x.get('first_name', None), x.get('last_name', None)) if x.get('first_name') and x.get('last_name') else None for x in self.vk.method('users.get', {'user_ids': ','.join(ids)})])
+        return tuple([(x.get('first_name', None), x.get('last_name', None)) if x.get('first_name') and x.get('last_name') else ('Удаленный', 'пользователь') for x in self.vk.method('users.get', {'user_ids': ','.join(ids)})])
 
 

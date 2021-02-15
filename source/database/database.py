@@ -11,9 +11,9 @@ class Database:
 
     def __create(self) -> None:
         self.__cursor.execute(
-            'CREATE TABLE IF NOT EXISTS conversations (id INTEGER PRIMARY KEY unique);')
+            'CREATE TABLE IF NOT EXISTS conversations (id INTEGER PRIMARY KEY);')
         self.__cursor.execute(
-            'CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY unique, conversation INTEGER, ts INTEGER, ot INTEGER, from_id INTEGER, FOREIGN KEY (conversation) REFERENCES conversations(id));')
+            'CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY, conversation INTEGER, ts INTEGER, ot INTEGER, from_id INTEGER, FOREIGN KEY (conversation) REFERENCES conversations(id));')
         self.__conn.commit()
 
     def add_conversations(self, id: int) -> None:
