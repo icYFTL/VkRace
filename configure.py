@@ -4,16 +4,20 @@ from sys import executable, argv
 from time import sleep
 import hues
 from screeninfo import get_monitors
-from copy import copy
+from getpass import getpass
 
 
 class Configure:
     def __init__(self, restart=True):
         self.restart = restart
 
-    def __request(self, request: str, comparator) -> str:
+    def __request(self, request: str, comparator, formatter=None, input_operator=input) -> str:
         while True:
-            result = input(request).strip().lower()
+            if formatter:
+                formatter(request)
+            else:
+                print(request)
+            result = input_operator('> ').strip().lower()
             if not comparator(result):
                 hues.error('Invalid value passed.')
             else:
@@ -22,7 +26,7 @@ class Configure:
     def run(self) -> None:
         hues.info('### Configuring started ###')
 
-        token = self.__request('VK token: ', lambda x: len(x) == 85)
+        token = self.__request('VK token: ', lambda x: len(x) == 85, None, getpass)
         delta = self.__request('Delta (hour/day/week/month/year): ',
                                lambda x: x in ['hour', 'day', 'week', 'month', 'year'])
 
@@ -44,9 +48,9 @@ class Configure:
         _display = get_monitors()
         if len(_display) > 1:
             _d_msg = '\n'.join(
-                [f'{i + 1}# Display (width={obj.width}, height={obj.height})' for i, obj in enumerate(_display)])
+                [f'#{i + 1} Display (width={obj.width}, height={obj.height})' for i, obj in enumerate(_display)])
             _d_i = self.__request(f'You have {len(_display)} monitors. Choose video resolution:\n{_d_msg}',
-                                  lambda x: 1 < int(x) < len(_display) + 1)
+                                  lambda x: 1 <= int(x) < len(_display) + 1)
             display = _display[int(_d_i) - 1]
 
         _display = _display[0]
@@ -54,10 +58,14 @@ class Configure:
 
         hues.info(f'Video resolution is ({d_width}, {d_height}) now.')
 
-        result = copy(vars())
-        for x in list(result):
-            if x in ['self', 'result'] or x.startswith('_'):
-                result.pop(x)
+        result = {
+            'token': token,
+            'delta': delta,
+            'fps': fps,
+            'clean': clean,
+            'd_width': d_width,
+            'd_height': d_height
+        }
 
         open('config.json', 'w', encoding='UTF-8').write(json.dumps(result))
 
