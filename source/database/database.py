@@ -30,22 +30,19 @@ class Database:
         result = self.__cursor.execute(f'SELECT max(ot) as ot FROM messages WHERE conversation={id}').fetchone()
         return result.get('ot', 0) if result.get('ot', 0) else 0
 
-    def add_messages(self, messages: tuple) -> None:
-        offset = messages[1] - 200
-        for message in messages[0]['items']:
+    def add_messages(self, messages: list) -> None:
+        for message in messages:
             try:
                 self.__cursor.execute(
                     'INSERT INTO messages (id, conversation, ts, ot, from_id) VALUES ({}, {}, {}, {}, {});'.format(
                         message['id'],
                         message['peer_id'],
                         message['date'],
-                        offset,
+                        message['conversation_message_id'],
                         message['from_id']
                     ))
             except sqlite3.IntegrityError:
                 pass
-            finally:
-                offset += 1
         self.__conn.commit()
 
     def get_min_ts(self) -> int:

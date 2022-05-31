@@ -46,15 +46,19 @@ class Configure:
         clean = True if self.__request(f'Clear cache? (y/n): ',
                                        lambda x: x.lower().strip() in ['y', 'n']) == 'y' else False
         _display = get_monitors()
-        if len(_display) > 1:
-            _d_msg = '\n'.join(
-                [f'#{i + 1} Display (width={obj.width}, height={obj.height})' for i, obj in enumerate(_display)])
-            _d_i = self.__request(f'You have {len(_display)} monitors. Choose video resolution:\n{_d_msg}',
-                                  lambda x: 1 <= int(x) < len(_display) + 1)
+        _d_msg = '\n'.join(
+            [f'#{i + 1} Display (width={obj.width}, height={obj.height})' for i, obj in enumerate(_display)])
+        _d_msg += f'\n#{len(_display) + 1} Custom'
+        _d_i = self.__request(f'You have {len(_display)} monitors. Choose video resolution:\n{_d_msg}',
+                              lambda x: 1 <= int(x) < len(_display) + 2)
+        if int(_d_i) == len(_display) + 1:
+            d_width, d_height = map(int, self.__request('Type resolution like (1920;1080)',
+                                                        lambda x: all([x.isdigit() for x in x.split(';')])).split(
+                ';'))
+        else:
             display = _display[int(_d_i) - 1]
-
-        _display = _display[0]
-        d_width, d_height = _display.width, _display.height
+            _display = _display[0]
+            d_width, d_height = _display.width, _display.height
 
         hues.info(f'Video resolution is ({d_width}, {d_height}) now.')
 

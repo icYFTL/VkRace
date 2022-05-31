@@ -3,6 +3,7 @@ from os import path, mkdir, listdir
 import json
 from sys import stdout
 import re
+import hues
 
 
 def log_prepare():
@@ -30,6 +31,37 @@ def get_last_result_name(delta, fps):
 
     if path.exists('out'):
         files = sorted([x for x in listdir('out') if re.match(r'result_\w+_\d+_fps_\d+\.mp4', x)])
-        counter = int(files[-1].split('_')[1]) + 1
+        if files:
+            counter = int(files[-1].split('_')[4].replace('.mp4', '')) + 1
 
     return template.format(delta=delta, fps=fps, counter=counter)
+
+
+def request(question: str, comparator=None, formatter=None, input_operator=input) -> str:
+    while True:
+        if formatter:
+            formatter(question)
+        else:
+            print(question)
+        result = input_operator('> ').strip()
+        if comparator:
+            if not comparator(result):
+                hues.error('Invalid value passed.')
+            else:
+                return result
+        else:
+            return result
+
+
+def yes_no(question: str, question_formatter=None) -> bool:
+    question += ' (y/n)'
+    while True:
+        if not question_formatter:
+            print(question)
+        else:
+            question_formatter(question)
+        result = input('> ')
+        if result.lower() not in ['y', 'n']:
+            continue
+
+        return result == 'y'

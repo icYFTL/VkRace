@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 from pytz import timezone
 from source.database.database import Database
-from source.vk_api.vk_api import VK
+from source.vk import VK
 from source.utils.progress_bar import ProgressBar
 from os import path, listdir
 import cv2

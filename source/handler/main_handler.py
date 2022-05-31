@@ -1,12 +1,13 @@
-from source.vk_api.vk_api import VK
+from source.vk import VK
 from halo import Halo
-from source.utils.progress_bar import ProgressBar
 from source.database.database import Database
 from os import path, mkdir
 from source.handler import DataHandler
 from core import config
 from shutil import rmtree
 from logging import getLogger
+import pickle
+from source.utils import *
 
 
 class MainHandler:
@@ -15,50 +16,61 @@ class MainHandler:
         self.vk = VK(token=self.token)
         self.log = getLogger('MainHandler')
 
+    def get_conversations(self, save=True):
+        conversations = None
+        if path.exists(path.join('cache', 'peers.cache')):
+            if yes_no('Have already loaded conversations. Wanna use them?'):
+                with open(path.join('cache', 'peers.cache'), 'rb') as f:
+                    conversations = pickle.load(f)
+                    return conversations
+        spinner = Halo(spinner='dots', text='Getting chats...')
+        spinner.start()
+        conversations = self.vk.get_conversations()
+
+        if save:
+            with open(path.join(path.join('cache', 'peers.cache')), 'wb') as f:
+                pickle.dump(conversations, f)
+        spinner.stop()
+        return conversations
+
     def run(self):
         if path.exists('pre_res'):
-            self.log.warning('Folder pre_res already exists. Remove it? (y/n)')
-            if input('> ').strip().lower() == 'y':
+            if yes_no('Folder pre_res already exists. Clear it?', self.log.warning):
                 rmtree('pre_res')
+                mkdir('pre_res')
             else:
-                self.log.info('Then try use --construct to create video from pre_res. Or clear it.')
-                return
+                self.log.info('Then try use --construct to create video from pre_res. Or clear it manually.')
+                exit(0)
 
         if not path.exists('pre_res'):
             mkdir('pre_res')
+
+        if not path.exists('cache'):
+            mkdir('cache')
 
         if not path.exists('out'):
             mkdir('out')
 
         if path.exists('database.db'):
             self.log.warning('Already have messages. Will update it.')
-
-        spinner = Halo(spinner='dots', text='Getting chats...')
-
-        spinner.start()
-        conversations = self.vk.get_conversations()
-        spinner.stop()
+        conversations = self.get_conversations()
 
         handled = 0
-        total = conversations[0]['count']
+        total = len(conversations)
         self.log.info(f'Total chats: {total}')
-        self.log.info(f'Loaded (uses only chats with users): {sum([len(x) for x in conversations])}')
 
         pb = ProgressBar(title='Messages getting', end=total)
 
         db = Database()
         for cell in conversations:
-            for conversation in cell['items']:
-                offset = 0
-                id = conversation['conversation']['peer']['id']
-                pb.update(handled)
+            offset = 0
+            pb.update(handled)
 
-                if db.is_conversation_exists(id):
-                    offset = db.get_last_offset(id)
-                else:
-                    db.add_conversations(id)
-                messages = self.vk.get_messages(conversation, offset)
-                for msg in messages:
-                    db.add_messages(msg)
-                handled += 1
+            if db.is_conversation_exists(cell):
+                offset = db.get_last_offset(cell)
+            else:
+                db.add_conversations(cell)
+            messages = self.vk.get_messages(cell, offset)
+            db.add_messages(messages)
+            handled += 1
         DataHandler(self.token).run(config['delta'])
